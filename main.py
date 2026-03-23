@@ -8,7 +8,7 @@ from telegram.ext import Application, MessageHandler, filters, ContextTypes, Com
 logging.basicConfig(level=logging.INFO)
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "").strip()
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "").strip()
 
 async def analyze_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     photo = update.message.photo[-1]
@@ -17,9 +17,9 @@ async def analyze_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response = requests.get(file_url)
     image_data = base64.standard_b64encode(response.content).decode("utf-8")
     await update.message.reply_text("Analiz yapiliyor, lutfen bekleyin...")
-    headers = {"Authorization": "Bearer " + GROQ_API_KEY, "Content-Type": "application/json"}
+    headers = {"Authorization": "Bearer " + OPENAI_API_KEY, "Content-Type": "application/json"}
     payload = {
-        "model": "meta-llama/llama-4-scout-17b-16e-instruct",
+        "model": "gpt-4o",
         "messages": [{
             "role": "user",
             "content": [
@@ -29,7 +29,7 @@ async def analyze_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
         }],
         "max_tokens": 1024
     }
-    result = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload).json()
+    result = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload).json()
     if "choices" in result:
         analysis = result["choices"][0]["message"]["content"]
     else:
