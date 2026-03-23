@@ -32,45 +32,10 @@ async def analyze_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     }
                 },
                 {
-                    "text": """Sen bir vibrasyon analiz uzmanısın. Bu elektrik motoru vibrasyon spektrum grafiğini analiz et ve şunları belirt:
-
-1. GENEL DURUM: (Normal / İzleme Gerekli / Kritik / Acil Müdahale)
-
-2. TESPİT EDİLEN ANORMALLİKLER:
-- Hangi frekanslarda pik var
-- Olası arıza türü
-- Ciddiyet seviyesi
-
-3. RULMAN DURUMU:
-- İç bilezik, dış bilezik, top frekanslarında sorun var mı?
-
-4. MEKANİK SORUNLAR:
-- Dengesizlik, yanlış hizalama, gevşeklik var mı?
-
-5. ÖNERİ: Ne zaman ve nasıl müdahale edilmeli?
-
-Kısa ve net Türkçe yaz."""
+                    "text": """Sen bir vibrasyon analiz uzmanısın. Bu elektrik motoru vibrasyon spektrum grafiğini analiz et ve şunları belirt:\n\n1. GENEL DURUM: (Normal / İzleme Gerekli / Kritik / Acil Müdahale)\n\n2. TESPİT EDİLEN ANORMALLİKLER:\n- Hangi frekanslarda pik var\n- Olası arıza türü\n- Ciddiyet seviyesi\n\n3. RULMAN DURUMU:\n- İç bilezik, dış bilezik, top frekanslarında sorun var mı?\n\n4. MEKANİK SORUNLAR:\n- Dengesizlik, yanlış hizalama, gevşeklik var mı?\n\n5. ÖNERİ: Ne zaman ve nasıl müdahale edilmeli?\n\nKısa ve net Türkçe yaz."""
                 }
             ]
         }]
     }
     
-    gemini_response = requests.post(gemini_url, json=payload)
-    result = gemini_response.json()
-    
-if "candidates" in result:
-        analysis = result["candidates"][0]["content"]["parts"][0]["text"]
-    else:
-        analysis = f"Gemini hatası: {result}"    await update.message.reply_text(analysis)
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Merhaba! Vibrasyon spektrum grafiğini gönderin, analiz edeyim.")
-
-def main():
-    app = Application.builder().token(TELEGRAM_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.PHOTO, analyze_image))
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
+    gemini_response = requests.post(gemini
