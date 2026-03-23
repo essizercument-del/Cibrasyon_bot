@@ -17,7 +17,7 @@ async def analyze_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response = requests.get(file_url)
     image_data = base64.standard_b64encode(response.content).decode("utf-8")
     await update.message.reply_text("Analiz yapiliyor, lutfen bekleyin...")
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + GEMINI_API_KEY
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + GEMINI_API_KEY
     payload = {"contents": [{"parts": [{"inline_data": {"mime_type": "image/jpeg", "data": image_data}}, {"text": "Sen bir vibrasyon analiz uzmanissin. Bu elektrik motoru vibrasyon spektrum grafigini analiz et. 1. GENEL DURUM: Normal / Izleme Gerekli / Kritik / Acil Mudahale. 2. ANORMALLİKLER: hangi frekanslarda pik var, olasi ariza turu, ciddiyet. 3. RULMAN DURUMU: ic bilezik, dis bilezik, top frekanslari. 4. MEKANİK SORUNLAR: dengesizlik, yanlis hizalama, gevşeklik. 5. ONERİ: ne zaman mudahale edilmeli. Kisa ve net Turkce yaz."}]}]}
     result = requests.post(url, json=payload).json()
     if "candidates" in result:
