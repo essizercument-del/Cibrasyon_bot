@@ -58,8 +58,10 @@ Kısa ve net Türkçe yaz."""
     gemini_response = requests.post(gemini_url, json=payload)
     result = gemini_response.json()
     
-    analysis = result["candidates"][0]["content"]["parts"][0]["text"]
-    await update.message.reply_text(analysis)
+if "candidates" in result:
+        analysis = result["candidates"][0]["content"]["parts"][0]["text"]
+    else:
+        analysis = f"Gemini hatası: {result}"    await update.message.reply_text(analysis)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Merhaba! Vibrasyon spektrum grafiğini gönderin, analiz edeyim.")
