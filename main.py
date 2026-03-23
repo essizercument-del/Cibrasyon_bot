@@ -1,17 +1,14 @@
 import os
 import logging
-import anthropic
 import requests
 import base64
 from telegram import Update
-from telegram.ext import Application, MessageHandler, filters, ContextTypes
+from telegram.ext import Application, MessageHandler, filters, ContextTypes, CommandHandler
 
 logging.basicConfig(level=logging.INFO)
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "").strip()
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "").strip()
-
-anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 
 async def analyze_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     photo = update.message.photo[-1]
@@ -21,24 +18,21 @@ async def analyze_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response = requests.get(file_url)
     image_data = base64.standard_b64encode(response.content).decode("utf-8")
     
-    message = anthropic_client.messages.create(
-        model="claude-opus-4-5",
-        max_tokens=1024,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": "image/jpeg",
-                            "data": image_data,
-                        },
-                    },
-                    {
-                        "type": "text",
-                        "text": """Sen bir vibrasyon analiz uzmanısın. Bu elektrik motoru vibrasyon spektrum grafiğini analiz et ve şunları belirt:
+    await update.message.reply_text("Analiz yapılıyor, lütfen bekleyin...")
+    
+    gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+    
+    payload = {
+        "contents": [{
+            "parts": [
+                {
+                    "inline_data": {
+                        "mime_type": "image/jpeg",
+                        "data": image_data
+                    }
+                },
+                {
+                    "text": """Sen bir vibrasyon analiz uzmanısın. Bu elektrik motoru vibrasyon spektrum grafiğini analiz et ve şunları belirt:
 
 1. GENEL DURUM: (Normal / İzleme Gerekli / Kritik / Acil Müdahale)
 
@@ -55,23 +49,25 @@ async def analyze_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 5. ÖNERİ: Ne zaman ve nasıl müdahale edilmeli?
 
-Kısa ve net yaz, teknik terimlerle."""
-                    }
-                ],
-            }
-        ],
-    )
+Kısa ve net Türkçe yaz."""
+                }
+            ]
+        }]
+    }
     
-    await update.message.reply_text(message.content[0].text)
+    gemini_response = requests.post(gemini_url, json=payload)
+    result = gemini_response.json()
+    
+    analysis = result["candidates"][0]["content"]["parts"][0]["text"]
+    await update.message.reply_text(analysis)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Merhaba! Vibrasyon spektrum grafiğini gönderin, analiz edeyim.")
 
 def main():
     app = Application.builder().token(TELEGRAM_TOKEN).build()
-    app.add_handler(MessageHandler(filters.PHOTO, analyze_image))
-    from telegram.ext import CommandHandler
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.PHOTO, analyze_image))
     app.run_polling()
 
 if __name__ == "__main__":
