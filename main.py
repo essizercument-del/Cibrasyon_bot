@@ -8,7 +8,7 @@ from telegram.ext import Application, MessageHandler, filters, ContextTypes, Com
 logging.basicConfig(level=logging.INFO)
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN", "").strip()
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "").strip()
 
 async def analyze_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     photo = update.message.photo[-1]
@@ -17,11 +17,21 @@ async def analyze_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response = requests.get(file_url)
     image_data = base64.standard_b64encode(response.content).decode("utf-8")
     await update.message.reply_text("Analiz yapiliyor, lutfen bekleyin...")
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + GEMINI_API_KEY
-    payload = {"contents": [{"parts": [{"inline_data": {"mime_type": "image/jpeg", "data": image_data}}, {"text": "Sen bir vibrasyon analiz uzmanissin. Bu elektrik motoru vibrasyon spektrum grafigini analiz et. 1. GENEL DURUM: Normal / Izleme Gerekli / Kritik / Acil Mudahale. 2. ANORMALLİKLER: hangi frekanslarda pik var, olasi ariza turu, ciddiyet. 3. RULMAN DURUMU: ic bilezik, dis bilezik, top frekanslari. 4. MEKANİK SORUNLAR: dengesizlik, yanlis hizalama, gevşeklik. 5. ONERİ: ne zaman mudahale edilmeli. Kisa ve net Turkce yaz."}]}]}
-    result = requests.post(url, json=payload).json()
-    if "candidates" in result:
-        analysis = result["candidates"][0]["content"]["parts"][0]["text"]
+    headers = {"Authorization": "Bearer " + GROQ_API_KEY, "Content-Type": "application/json"}
+    payload = {
+        "model": "meta-llama/llama-4-scout-17b-16e-instruct",
+        "messages": [{
+            "role": "user",
+            "content": [
+                {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64," + image_data}},
+                {"type": "text", "text": "Sen bir vibrasyon analiz uzmanissin. Bu elektrik motoru vibrasyon spektrum grafigini analiz et. 1. GENEL DURUM: Normal / Izleme Gerekli / Kritik / Acil Mudahale. 2. ANORMALLİKLER: hangi frekanslarda pik var, olasi ariza turu, ciddiyet. 3. RULMAN DURUMU: ic bilezik, dis bilezik, top frekanslari. 4. MEKANİK SORUNLAR: dengesizlik, yanlis hizalama, gevşeklik. 5. ONERİ: ne zaman mudahale edilmeli. Kisa ve net Turkce yaz."}
+            ]
+        }],
+        "max_tokens": 1024
+    }
+    result = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload).json()
+    if "choices" in result:
+        analysis = result["choices"][0]["message"]["content"]
     else:
         analysis = "Hata: " + str(result)
     await update.message.reply_text(analysis)
