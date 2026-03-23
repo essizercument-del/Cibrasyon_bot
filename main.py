@@ -14,28 +14,26 @@ async def analyze_image(update: Update, context: ContextTypes.DEFAULT_TYPE):
     photo = update.message.photo[-1]
     file = await context.bot.get_file(photo.file_id)
     file_url = file.file_path
-    
     response = requests.get(file_url)
     image_data = base64.standard_b64encode(response.content).decode("utf-8")
-    
-    await update.message.reply_text("Analiz yapılıyor, lütfen bekleyin...")
-    
-    gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
-    
-    payload = {
-        "contents": [{
-            "parts": [
-                {
-                    "inline_data": {
-                        "mime_type": "image/jpeg",
-                        "data": image_data
-                    }
-                },
-                {
-                    "text": """Sen bir vibrasyon analiz uzmanısın. Bu elektrik motoru vibrasyon spektrum grafiğini analiz et ve şunları belirt:\n\n1. GENEL DURUM: (Normal / İzleme Gerekli / Kritik / Acil Müdahale)\n\n2. TESPİT EDİLEN ANORMALLİKLER:\n- Hangi frekanslarda pik var\n- Olası arıza türü\n- Ciddiyet seviyesi\n\n3. RULMAN DURUMU:\n- İç bilezik, dış bilezik, top frekanslarında sorun var mı?\n\n4. MEKANİK SORUNLAR:\n- Dengesizlik, yanlış hizalama, gevşeklik var mı?\n\n5. ÖNERİ: Ne zaman ve nasıl müdahale edilmeli?\n\nKısa ve net Türkçe yaz."""
-                }
-            ]
-        }]
-    }
-    
-    gemini_response = requests.post(gemini
+    await update.message.reply_text("Analiz yapiliyor, lutfen bekleyin...")
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + GEMINI_API_KEY
+    payload = {"contents": [{"parts": [{"inline_data": {"mime_type": "image/jpeg", "data": image_data}}, {"text": "Sen bir vibrasyon analiz uzmanissin. Bu elektrik motoru vibrasyon spektrum grafigini analiz et. 1. GENEL DURUM: Normal / Izleme Gerekli / Kritik / Acil Mudahale. 2. ANORMALLİKLER: hangi frekanslarda pik var, olasi ariza turu, ciddiyet. 3. RULMAN DURUMU: ic bilezik, dis bilezik, top frekanslari. 4. MEKANİK SORUNLAR: dengesizlik, yanlis hizalama, gevşeklik. 5. ONERİ: ne zaman mudahale edilmeli. Kisa ve net Turkce yaz."}]}]}
+    result = requests.post(url, json=payload).json()
+    if "candidates" in result:
+        analysis = result["candidates"][0]["content"]["parts"][0]["text"]
+    else:
+        analysis = "Hata: " + str(result)
+    await update.message.reply_text(analysis)
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Merhaba! Vibrasyon spektrum grafigini gonderin, analiz edeyim.")
+
+def main():
+    app = Application.builder().token(TELEGRAM_TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.PHOTO, analyze_image))
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()
